@@ -57,20 +57,24 @@ def initialize():
     initialize_util.configure_sigint_handler()
     initialize_util.configure_opts_onchange()
 
-    from modules import sd_models
-    sd_models.setup_model()
-    startup_timer.record("setup SD model")
+    # Check if we should skip model loading (proxy mode)
+    if not os.getenv('SD_API_URL'):
+        from modules import sd_models
+        sd_models.setup_model()
+        startup_timer.record("setup SD model")
 
-    from modules.shared_cmd_options import cmd_opts
+        from modules.shared_cmd_options import cmd_opts
 
-    from modules import codeformer_model
-    warnings.filterwarnings(action="ignore", category=UserWarning, module="torchvision.transforms.functional_tensor")
-    codeformer_model.setup_model(cmd_opts.codeformer_models_path)
-    startup_timer.record("setup codeformer")
+        from modules import codeformer_model
+        warnings.filterwarnings(action="ignore", category=UserWarning, module="torchvision.transforms.functional_tensor")
+        codeformer_model.setup_model(cmd_opts.codeformer_models_path)
+        startup_timer.record("setup codeformer")
 
-    from modules import gfpgan_model
-    gfpgan_model.setup_model(cmd_opts.gfpgan_models_path)
-    startup_timer.record("setup gfpgan")
+        from modules import gfpgan_model
+        gfpgan_model.setup_model(cmd_opts.gfpgan_models_path)
+        startup_timer.record("setup gfpgan")
+    else:
+        print("Running in API proxy mode, skipping model loading")
 
     initialize_rest(reload_script_modules=False)
 

@@ -46,6 +46,19 @@ restricted_opts: set[str] = None
 
 sd_model: sd_models_types.WebuiSdModel = None
 
+# Create mock sd_model when in proxy mode
+if os.getenv('SD_API_URL'):
+    # Create a mock sd_model to prevent errors
+    class MockSDModel:
+        sd_checkpoint_info = type('obj', (object,), {'name_for_extra': 'Remote API'})()
+        sd_model_hash = 'remote'
+        sd_model_name = 'Remote API'
+        sd_vae_name = 'Remote API'
+        sd_vae_hash = 'remote'
+        def __init__(self):
+            pass
+    sd_model = MockSDModel()
+
 settings_components: dict = None
 """assigned from ui.py, a mapping on setting names to gradio components responsible for those settings"""
 

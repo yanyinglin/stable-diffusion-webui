@@ -430,6 +430,13 @@ class Api:
         return params
 
     def text2imgapi(self, txt2imgreq: models.StableDiffusionTxt2ImgProcessingAPI):
+        # Check if we should use remote API
+        if os.getenv('SD_API_URL'):
+            from modules.api_proxy import RemoteSDAPIClient
+            client = RemoteSDAPIClient()
+            params = txt2imgreq.dict()
+            return client.txt2img(params)
+        
         task_id = txt2imgreq.force_task_id or create_task_id("txt2img")
 
         script_runner = scripts.scripts_txt2img
@@ -490,6 +497,13 @@ class Api:
         return models.TextToImageResponse(images=b64images, parameters=vars(txt2imgreq), info=processed.js())
 
     def img2imgapi(self, img2imgreq: models.StableDiffusionImg2ImgProcessingAPI):
+        # Check if we should use remote API
+        if os.getenv('SD_API_URL'):
+            from modules.api_proxy import RemoteSDAPIClient
+            client = RemoteSDAPIClient()
+            params = img2imgreq.dict()
+            return client.img2img(params)
+        
         task_id = img2imgreq.force_task_id or create_task_id("img2img")
 
         init_images = img2imgreq.init_images
@@ -565,6 +579,13 @@ class Api:
         return models.ImageToImageResponse(images=b64images, parameters=vars(img2imgreq), info=processed.js())
 
     def extras_single_image_api(self, req: models.ExtrasSingleImageRequest):
+        # Check if we should use remote API
+        if os.getenv('SD_API_URL'):
+            from modules.api_proxy import RemoteSDAPIClient
+            client = RemoteSDAPIClient()
+            params = req.dict()
+            return client.extras_single_image(params)
+        
         reqDict = setUpscalers(req)
 
         reqDict['image'] = decode_base64_to_image(reqDict['image'])
@@ -575,6 +596,13 @@ class Api:
         return models.ExtrasSingleImageResponse(image=encode_pil_to_base64(result[0][0]), html_info=result[1])
 
     def extras_batch_images_api(self, req: models.ExtrasBatchImagesRequest):
+        # Check if we should use remote API
+        if os.getenv('SD_API_URL'):
+            from modules.api_proxy import RemoteSDAPIClient
+            client = RemoteSDAPIClient()
+            params = req.dict()
+            return client.extras_batch_images(params)
+        
         reqDict = setUpscalers(req)
 
         image_list = reqDict.pop('imageList', [])
@@ -586,6 +614,13 @@ class Api:
         return models.ExtrasBatchImagesResponse(images=list(map(encode_pil_to_base64, result[0])), html_info=result[1])
 
     def pnginfoapi(self, req: models.PNGInfoRequest):
+        # Check if we should use remote API
+        if os.getenv('SD_API_URL'):
+            from modules.api_proxy import RemoteSDAPIClient
+            client = RemoteSDAPIClient()
+            params = req.dict()
+            return client.png_info(params)
+        
         image = decode_base64_to_image(req.image.strip())
         if image is None:
             return models.PNGInfoResponse(info="")
@@ -600,6 +635,12 @@ class Api:
         return models.PNGInfoResponse(info=geninfo, items=items, parameters=params)
 
     def progressapi(self, req: models.ProgressRequest = Depends()):
+        # Check if we should use remote API
+        if os.getenv('SD_API_URL'):
+            from modules.api_proxy import RemoteSDAPIClient
+            client = RemoteSDAPIClient()
+            return client.get_progress()
+        
         # copy from check_progress_call of ui.py
 
         if shared.state.job_count == 0:
@@ -628,6 +669,13 @@ class Api:
         return models.ProgressResponse(progress=progress, eta_relative=eta_relative, state=shared.state.dict(), current_image=current_image, textinfo=shared.state.textinfo, current_task=current_task)
 
     def interrogateapi(self, interrogatereq: models.InterrogateRequest):
+        # Check if we should use remote API
+        if os.getenv('SD_API_URL'):
+            from modules.api_proxy import RemoteSDAPIClient
+            client = RemoteSDAPIClient()
+            params = interrogatereq.dict()
+            return client.interrogate(params)
+        
         image_b64 = interrogatereq.image
         if image_b64 is None:
             raise HTTPException(status_code=404, detail="Image not found")
@@ -647,6 +695,12 @@ class Api:
         return models.InterrogateResponse(caption=processed)
 
     def interruptapi(self):
+        # Check if we should use remote API
+        if os.getenv('SD_API_URL'):
+            from modules.api_proxy import RemoteSDAPIClient
+            client = RemoteSDAPIClient()
+            return client.interrupt()
+        
         shared.state.interrupt()
 
         return {}
@@ -662,6 +716,12 @@ class Api:
         return {}
 
     def skip(self):
+        # Check if we should use remote API
+        if os.getenv('SD_API_URL'):
+            from modules.api_proxy import RemoteSDAPIClient
+            client = RemoteSDAPIClient()
+            return client.skip()
+        
         shared.state.skip()
 
     def get_config(self):

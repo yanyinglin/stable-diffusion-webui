@@ -1,0 +1,13 @@
+models/
+embeddings/
+outputs/
+test/
+*.pyc
+__pycache__/
+.git/
+.venv/
+venv/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
