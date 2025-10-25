@@ -6,7 +6,7 @@ metadata:
   labels:
     app: sd-webui-proxy
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: sd-webui-proxy
@@ -23,7 +23,7 @@ spec:
           name: http
         env:
         - name: SD_API_URL
-          value: "http://sd-api-service:7860"  # 指向后端SD API服务
+          value: "http://172.169.8.253:31110"  # 指向后端SD API服务
         - name: GRADIO_SERVER_NAME
           value: "0.0.0.0"
         - name: GRADIO_SERVER_PORT
@@ -35,22 +35,8 @@ spec:
             memory: "256Mi"
             cpu: "100m"
           limits:
-            memory: "512Mi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /sdapi/v1/progress
-            port: 7860
-          initialDelaySeconds: 30
-          periodSeconds: 30
-          timeoutSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /sdapi/v1/progress
-            port: 7860
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          timeoutSeconds: 5
+            memory: "2Gi"
+            cpu: "4"
 ---
 apiVersion: v1
 kind: Service
