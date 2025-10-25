@@ -9,12 +9,9 @@ from modules.timer import startup_timer
 
 
 def imports():
-    logging.getLogger("torch.distributed.nn").setLevel(logging.ERROR)  # sshh...
+    # Skip torch imports in proxy mode
     logging.getLogger("xformers").addFilter(lambda record: 'A matching Triton is not available' not in record.getMessage())
-
-    import torch  # noqa: F401
-    startup_timer.record("import torch")
-    import pytorch_lightning  # noqa: F401
+    
     startup_timer.record("import torch")
     warnings.filterwarnings(action="ignore", category=DeprecationWarning, module="pytorch_lightning")
     warnings.filterwarnings(action="ignore", category=UserWarning, module="torchvision")
@@ -26,11 +23,17 @@ def imports():
     from modules import paths, timer, import_hook, errors  # noqa: F401
     startup_timer.record("setup paths")
 
-    import ldm.modules.encoders.modules  # noqa: F401
-    startup_timer.record("import ldm")
+    # Skip ldm and sgm imports in proxy mode
+    if not os.getenv('SD_API_URL'):
+        import ldm.modules.encoders.modules  # noqa: F401
+        startup_timer.record("import ldm")
 
-    import sgm.modules.encoders.modules  # noqa: F401
-    startup_timer.record("import sgm")
+        import sgm.modules.encoders.modules  # noqa: F401
+        startup_timer.record("import sgm")
+    else:
+        print("Skipping ldm and sgm imports in proxy mode")
+        startup_timer.record("import ldm")
+        startup_timer.record("import sgm")
 
     from modules import shared_init
     shared_init.initialize()
@@ -57,24 +60,9 @@ def initialize():
     initialize_util.configure_sigint_handler()
     initialize_util.configure_opts_onchange()
 
-    # Check if we should skip model loading (proxy mode)
-    if not os.getenv('SD_API_URL'):
-        from modules import sd_models
-        sd_models.setup_model()
-        startup_timer.record("setup SD model")
-
-        from modules.shared_cmd_options import cmd_opts
-
-        from modules import codeformer_model
-        warnings.filterwarnings(action="ignore", category=UserWarning, module="torchvision.transforms.functional_tensor")
-        codeformer_model.setup_model(cmd_opts.codeformer_models_path)
-        startup_timer.record("setup codeformer")
-
-        from modules import gfpgan_model
-        gfpgan_model.setup_model(cmd_opts.gfpgan_models_path)
-        startup_timer.record("setup gfpgan")
-    else:
-        print("Running in API proxy mode, skipping model loading")
+    # Always run in proxy mode - no local model loading
+    print("Running in API proxy mode, skipping all local model loading")
+    print(f"SD_API_URL: {os.getenv('SD_API_URL', 'Not set')}")
 
     initialize_rest(reload_script_modules=False)
 
@@ -103,9 +91,8 @@ def initialize_rest(*, reload_script_modules=False):
         scripts.load_scripts()
         return
 
-    from modules import sd_models
-    sd_models.list_models()
-    startup_timer.record("list SD models")
+    # Skip all local model loading in proxy mode
+    print("Skipping local model loading in proxy mode")
 
     from modules import localization
     localization.list_localizations(cmd_opts.localizations_dir)
@@ -119,55 +106,5 @@ def initialize_rest(*, reload_script_modules=False):
             importlib.reload(module)
         startup_timer.record("reload script modules")
 
-    from modules import modelloader
-    modelloader.load_upscalers()
-    startup_timer.record("load upscalers")
-
-    from modules import sd_vae
-    sd_vae.refresh_vae_list()
-    startup_timer.record("refresh VAE")
-
-    from modules import textual_inversion
-    textual_inversion.textual_inversion.list_textual_inversion_templates()
-    startup_timer.record("refresh textual inversion templates")
-
-    from modules import script_callbacks, sd_hijack_optimizations, sd_hijack
-    script_callbacks.on_list_optimizers(sd_hijack_optimizations.list_optimizers)
-    sd_hijack.list_optimizers()
-    startup_timer.record("scripts list_optimizers")
-
-    from modules import sd_unet
-    sd_unet.list_unets()
-    startup_timer.record("scripts list_unets")
-
-    def load_model():
-        """
-        Accesses shared.sd_model property to load model.
-        After it's available, if it has been loaded before this access by some extension,
-        its optimization may be None because the list of optimizers has not been filled
-        by that time, so we apply optimization again.
-        """
-        from modules import devices
-        devices.torch_npu_set_device()
-
-        shared.sd_model  # noqa: B018
-
-        if sd_hijack.current_optimizer is None:
-            sd_hijack.apply_optimizations()
-
-        devices.first_time_calculation()
-    if not shared.cmd_opts.skip_load_model_at_start:
-        Thread(target=load_model).start()
-
-    from modules import shared_items
-    shared_items.reload_hypernetworks()
-    startup_timer.record("reload hypernetworks")
-
-    from modules import ui_extra_networks
-    ui_extra_networks.initialize()
-    ui_extra_networks.register_default_pages()
-
-    from modules import extra_networks
-    extra_networks.initialize()
-    extra_networks.register_default_extra_networks()
-    startup_timer.record("initialize extra networks")
+    # Skip model-related initialization in proxy mode
+    print("Skipping model-related initialization in proxy mode")

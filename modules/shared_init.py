@@ -1,6 +1,14 @@
 import os
 
-import torch
+# Skip torch imports in proxy mode
+if os.getenv('SD_API_URL'):
+    # Create dummy torch module for proxy mode
+    class DummyTorch:
+        float32 = None
+        float16 = None
+    torch = DummyTorch()
+else:
+    import torch
 
 from modules import shared
 from modules.shared import cmd_opts
@@ -24,20 +32,33 @@ def initialize():
         pass
 
     from modules import devices
-    devices.device, devices.device_interrogate, devices.device_gfpgan, devices.device_esrgan, devices.device_codeformer = \
-        (devices.cpu if any(y in cmd_opts.use_cpu for y in [x, 'all']) else devices.get_optimal_device() for x in ['sd', 'interrogate', 'gfpgan', 'esrgan', 'codeformer'])
+    
+    # Skip device initialization in proxy mode
+    if os.getenv('SD_API_URL'):
+        print("Skipping device initialization in proxy mode")
+        devices.device = devices.cpu
+        devices.device_interrogate = devices.cpu
+        devices.device_gfpgan = devices.cpu
+        devices.device_esrgan = devices.cpu
+        devices.device_codeformer = devices.cpu
+        devices.dtype = None
+        devices.dtype_vae = None
+        devices.dtype_inference = None
+    else:
+        devices.device, devices.device_interrogate, devices.device_gfpgan, devices.device_esrgan, devices.device_codeformer = \
+            (devices.cpu if any(y in cmd_opts.use_cpu for y in [x, 'all']) else devices.get_optimal_device() for x in ['sd', 'interrogate', 'gfpgan', 'esrgan', 'codeformer'])
 
-    devices.dtype = torch.float32 if cmd_opts.no_half else torch.float16
-    devices.dtype_vae = torch.float32 if cmd_opts.no_half or cmd_opts.no_half_vae else torch.float16
-    devices.dtype_inference = torch.float32 if cmd_opts.precision == 'full' else devices.dtype
+        devices.dtype = torch.float32 if cmd_opts.no_half else torch.float16
+        devices.dtype_vae = torch.float32 if cmd_opts.no_half or cmd_opts.no_half_vae else torch.float16
+        devices.dtype_inference = torch.float32 if cmd_opts.precision == 'full' else devices.dtype
 
-    if cmd_opts.precision == "half":
-        msg = "--no-half and --no-half-vae conflict with --precision half"
-        assert devices.dtype == torch.float16, msg
-        assert devices.dtype_vae == torch.float16, msg
-        assert devices.dtype_inference == torch.float16, msg
-        devices.force_fp16 = True
-        devices.force_model_fp16()
+        if cmd_opts.precision == "half":
+            msg = "--no-half and --no-half-vae conflict with --precision half"
+            assert devices.dtype == torch.float16, msg
+            assert devices.dtype_vae == torch.float16, msg
+            assert devices.dtype_inference == torch.float16, msg
+            devices.force_fp16 = True
+            devices.force_model_fp16()
 
     shared.device = devices.device
     shared.weight_load_location = None if cmd_opts.lowram else "cpu"

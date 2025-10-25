@@ -2,18 +2,58 @@
 
 import pickle
 import collections
-
-import torch
+import os
 import numpy
 import _codecs
 import zipfile
 import re
 
+# Skip torch imports in proxy mode
+if os.getenv('SD_API_URL'):
+    # Create dummy torch module for proxy mode
+    class DummyTorch:
+        class storage:
+            class TypedStorage:
+                def __init__(self, _internal=True):
+                    pass
+            class _TypedStorage:
+                def __init__(self, _internal=True):
+                    pass
+        class _utils:
+            def _rebuild_tensor_v2(self, *args, **kwargs):
+                return None
+            def _rebuild_parameter(self, *args, **kwargs):
+                return None
+            def _rebuild_device_tensor_from_numpy(self, *args, **kwargs):
+                return None
+        class nn:
+            class modules:
+                class container:
+                    class ParameterDict:
+                        def __init__(self, *args, **kwargs):
+                            pass
+        def load(self, *args, **kwargs):
+            return None
+        FloatStorage = None
+        HalfStorage = None
+        IntStorage = None
+        LongStorage = None
+        DoubleStorage = None
+        ByteStorage = None
+        float32 = None
+        BFloat16Storage = None
+    
+    torch = DummyTorch()
+else:
+    import torch
 
 # PyTorch 1.13 and later have _TypedStorage renamed to TypedStorage
 from modules import errors
 
-TypedStorage = torch.storage.TypedStorage if hasattr(torch.storage, 'TypedStorage') else torch.storage._TypedStorage
+if os.getenv('SD_API_URL'):
+    TypedStorage = torch.storage.TypedStorage
+else:
+    TypedStorage = torch.storage.TypedStorage if hasattr(torch.storage, 'TypedStorage') else torch.storage._TypedStorage
 
 def encode(*args):
     out = _codecs.encode(*args)
@@ -191,6 +231,11 @@ with safe.Extra(handler):
         global_extra_handler = None
 
 
-unsafe_torch_load = torch.load
-torch.load = load
-global_extra_handler = None
+if os.getenv('SD_API_URL'):
+    # Skip torch.load replacement in proxy mode
+    unsafe_torch_load = lambda *args, **kwargs: None
+    global_extra_handler = None
+else:
+    unsafe_torch_load = torch.load
+    torch.load = load
+    global_extra_handler = None

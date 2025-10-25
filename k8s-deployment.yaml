@@ -17,13 +17,13 @@ spec:
     spec:
       containers:
       - name: sd-webui-proxy
-        image: k.harbor.siat.ac.cn/pels/sd-webui:v0.10
+        image: k.harbor.siat.ac.cn/pels/sd-webui:v0.12
         ports:
         - containerPort: 7860
           name: http
         env:
         - name: SD_API_URL
-          value: "http://172.169.8.253:31110"  # 指向后端SD API服务
+          value: "http://172.169.8.86:31110"  # 指向后端SD API服务
         - name: GRADIO_SERVER_NAME
           value: "0.0.0.0"
         - name: GRADIO_SERVER_PORT

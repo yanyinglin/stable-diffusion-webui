@@ -26,12 +26,20 @@ sys.path.insert(0, script_path)
 # search for directory of stable diffusion in following places
 sd_path = None
 possible_sd_paths = [os.path.join(script_path, 'repositories/stable-diffusion-stability-ai'), '.', os.path.dirname(script_path)]
-for possible_sd_path in possible_sd_paths:
-    if os.path.exists(os.path.join(possible_sd_path, 'ldm/models/diffusion/ddpm.py')):
-        sd_path = os.path.abspath(possible_sd_path)
-        break
 
-assert sd_path is not None, f"Couldn't find Stable Diffusion in any of: {possible_sd_paths}"
+# Skip SD path requirement in proxy mode
+if os.getenv('SD_API_URL'):
+    print("Running in proxy mode, skipping SD path requirement")
+    sd_path = script_path  # Use script_path as fallback
+else:
+    for possible_sd_path in possible_sd_paths:
+        if os.path.exists(os.path.join(possible_sd_path, 'ldm/models/diffusion/ddpm.py')):
+            sd_path = os.path.abspath(possible_sd_path)
+            break
+
+    if sd_path is None:
+        print("Warning: Couldn't find Stable Diffusion in any of the expected paths, using script_path as fallback")
+        sd_path = script_path
 
 mute_sdxl_imports()
 

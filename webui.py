@@ -10,6 +10,9 @@ from modules import initialize
 startup_timer = timer.startup_timer
 startup_timer.record("launcher")
 
+# Force proxy mode - no local SD models
+os.environ.setdefault('SD_API_URL', 'http://localhost:7860')
+
 initialize.imports()
 
 initialize.check_versions()
