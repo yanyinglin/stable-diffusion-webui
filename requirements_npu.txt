@@ -1,4 +1,2 @@
-cloudpickle
-decorator
-synr==0.5.0
-tornado
+# NPU dependencies removed for remote API proxy
+# All NPU-specific packages are not needed for remote API proxy

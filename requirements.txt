@@ -1,18 +1,14 @@
+# Minimal dependencies for remote API proxy
 fastapi>=0.90.1
-gradio==3.41.2
+uvicorn
 requests
 Pillow
 psutil
 inflection
 jsonmerge
 piexif
-safetensors
 GitPython
-blendmodes
-scikit-image>=0.19
 protobuf==3.20.0
 diskcache
 lark
-numpy
-resize-right
 pillow-avif-plugin==1.4.3
